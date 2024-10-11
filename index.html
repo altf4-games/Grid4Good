@@ -53,158 +53,83 @@
     <script>
         // Contract Address and ABI
         const contractAddress = "0x16C4CCA5a1fFaE42929B3C871041a1B741aE32Bd";
-        const contractABI = [
-                {
-                    "inputs": [],
-                    "stateMutability": "nonpayable",
-                    "type": "constructor"
-                },
-                {
-                    "anonymous": false,
-                    "inputs": [
-                        {
-                            "indexed": false,
-                            "internalType": "uint256",
-                            "name": "x",
-                            "type": "uint256"
-                        },
-                        {
-                            "indexed": false,
-                            "internalType": "uint256",
-                            "name": "y",
-                            "type": "uint256"
-                        },
-                        {
-                            "indexed": false,
-                            "internalType": "address",
-                            "name": "owner",
-                            "type": "address"
-                        },
-                        {
-                            "indexed": false,
-                            "internalType": "uint256",
-                            "name": "color",
-                            "type": "uint256"
-                        }
-                    ],
-                    "name": "PixelUpdated",
-                    "type": "event"
-                },
-                {
-                    "inputs": [],
-                    "name": "GRID_SIZE",
-                    "outputs": [
-                        {
-                            "internalType": "uint256",
-                            "name": "",
-                            "type": "uint256"
-                        }
-                    ],
-                    "stateMutability": "view",
-                    "type": "function"
-                },
-                {
-                    "inputs": [],
-                    "name": "PIXEL_PRICE",
-                    "outputs": [
-                        {
-                            "internalType": "uint256",
-                            "name": "",
-                            "type": "uint256"
-                        }
-                    ],
-                    "stateMutability": "view",
-                    "type": "function"
-                },
-                {
-                    "inputs": [
-                        {
-                            "internalType": "uint256",
-                            "name": "x",
-                            "type": "uint256"
-                        },
-                        {
-                            "internalType": "uint256",
-                            "name": "y",
-                            "type": "uint256"
-                        },
-                        {
-                            "internalType": "uint256",
-                            "name": "color",
-                            "type": "uint256"
-                        }
-                    ],
-                    "name": "buyPixel",
-                    "outputs": [],
-                    "stateMutability": "payable",
-                    "type": "function"
-                },
-                {
-                    "inputs": [
-                        {
-                            "internalType": "uint256",
-                            "name": "x",
-                            "type": "uint256"
-                        },
-                        {
-                            "internalType": "uint256",
-                            "name": "y",
-                            "type": "uint256"
-                        }
-                    ],
-                    "name": "getPixel",
-                    "outputs": [
-                        {
-                            "internalType": "address",
-                            "name": "",
-                            "type": "address"
-                        },
-                        {
-                            "internalType": "uint256",
-                            "name": "",
-                            "type": "uint256"
-                        }
-                    ],
-                    "stateMutability": "view",
-                    "type": "function"
-                },
-                {
-                    "inputs": [
-                        {
-                            "internalType": "uint256",
-                            "name": "",
-                            "type": "uint256"
-                        },
-                        {
-                            "internalType": "uint256",
-                            "name": "",
-                            "type": "uint256"
-                        }
-                    ],
-                    "name": "pixels",
-                    "outputs": [
-                        {
-                            "internalType": "address",
-                            "name": "owner",
-                            "type": "address"
-                        },
-                        {
-                            "internalType": "uint256",
-                            "name": "color",
-                            "type": "uint256"
-                        }
-                    ],
-                    "stateMutability": "view",
-                    "type": "function"
-                },
-                {
-                    "inputs": [],
-                    "name": "withdraw",
-                    "outputs": [],
-                    "stateMutability": "nonpayable",
-                    "type": "function"
-                }
-            ];
+    const contractABI = [
+        {
+            "inputs": [],
+            "stateMutability": "nonpayable",
+            "type": "constructor"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                { "indexed": false, "internalType": "uint256", "name": "x", "type": "uint256" },
+                { "indexed": false, "internalType": "uint256", "name": "y", "type": "uint256" },
+                { "indexed": false, "internalType": "address", "name": "owner", "type": "address" },
+                { "indexed": false, "internalType": "uint256", "name": "color", "type": "uint256" }
+            ],
+            "name": "PixelUpdated",
+            "type": "event"
+        },
+        {
+            "inputs": [],
+            "name": "GRID_SIZE",
+            "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "PIXEL_PRICE",
+            "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                { "internalType": "uint256", "name": "x", "type": "uint256" },
+                { "internalType": "uint256", "name": "y", "type": "uint256" },
+                { "internalType": "uint256", "name": "color", "type": "uint256" }
+            ],
+            "name": "buyPixel",
+            "outputs": [],
+            "stateMutability": "payable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                { "internalType": "uint256", "name": "x", "type": "uint256" },
+                { "internalType": "uint256", "name": "y", "type": "uint256" }
+            ],
+            "name": "getPixel",
+            "outputs": [
+                { "internalType": "address", "name": "", "type": "address" },
+                { "internalType": "uint256", "name": "", "type": "uint256" }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                { "internalType": "uint256", "name": "", "type": "uint256" },
+                { "internalType": "uint256", "name": "", "type": "uint256" }
+            ],
+            "name": "pixels",
+            "outputs": [
+                { "internalType": "address", "name": "owner", "type": "address" },
+                { "internalType": "uint256", "name": "color", "type": "uint256" }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "withdraw",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        }
+    ];
+
         let provider;
         let signer;
         let contract;
@@ -279,12 +204,15 @@
         }
 
         // Listen for PixelBought events
-        function listenForEvents() {
-            contract.on("PixelBought", (owner, x, y, color) => {
-                const hexColor = color.toNumber().toString(16).padStart(6, '0');
-                document.querySelector(`.pixel[data-x='${x}'][data-y='${y}']`).style.backgroundColor = "#" + hexColor;
-            });
-        }
+
+    function listenForEvents() {
+        contract.on("PixelUpdated", (x, y, owner, color) => {
+            const hexColor = color.toString(16).padStart(6, '0');  // Error happens here
+            document.querySelector(`.pixel[data-x='${x}'][data-y='${y}']`).style.backgroundColor = "#" + hexColor;
+            console.log(`Pixel updated at (${x}, ${y}) by ${owner} to color #${hexColor}`);
+        });
+    }
+
 
         // Select a pixel to change its color
         async function selectPixel(x, y) {
