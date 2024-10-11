@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Onchain Pixel Art - R/Place Clone</title>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(100, 10px);
+            grid-template-rows: repeat(100, 10px);
+            gap: 1px;
+        }
+
+        .pixel {
+            width: 10px;
+            height: 10px;
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            cursor: pointer;
+        }
+
+        .controls {
+            margin-top: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Onchain Pixel Art</h1>
+    <p>Click a pixel to change its color. Each pixel costs 0.01 Ether.</p>
+
+    <div class="grid" id="pixelGrid"></div>
+
+    <div class="controls">
+        <input type="color" id="colorPicker" value="#ff0000">
+        <button onclick="connectWallet()">Connect Wallet</button>
+        <p id="status">Wallet not connected</p>
+    </div>
+
+    <script>
+        // Contract Address and ABI
+        const contractAddress = "0x16C4CCA5a1fFaE42929B3C871041a1B741aE32Bd";
+        const contractABI = [
+                {
+                    "inputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "constructor"
+                },
+                {
+                    "anonymous": false,
+                    "inputs": [
+                        {
+                            "indexed": false,
+                            "internalType": "uint256",
+                            "name": "x",
+                            "type": "uint256"
+                        },
+                        {
+                            "indexed": false,
+                            "internalType": "uint256",
+                            "name": "y",
+                            "type": "uint256"
+                        },
+                        {
+                            "indexed": false,
+                            "internalType": "address",
+                            "name": "owner",
+                            "type": "address"
+                        },
+                        {
+                            "indexed": false,
+                            "internalType": "uint256",
+                            "name": "color",
+                            "type": "uint256"
+                        }
+                    ],
+                    "name": "PixelUpdated",
+                    "type": "event"
+                },
+                {
+                    "inputs": [],
+                    "name": "GRID_SIZE",
+                    "outputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "",
+                            "type": "uint256"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                },
+                {
+                    "inputs": [],
+                    "name": "PIXEL_PRICE",
+                    "outputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "",
+                            "type": "uint256"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "x",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "y",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "color",
+                            "type": "uint256"
+                        }
+                    ],
+                    "name": "buyPixel",
+                    "outputs": [],
+                    "stateMutability": "payable",
+                    "type": "function"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "x",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "y",
+                            "type": "uint256"
+                        }
+                    ],
+                    "name": "getPixel",
+                    "outputs": [
+                        {
+                            "internalType": "address",
+                            "name": "",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "",
+                            "type": "uint256"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "",
+                            "type": "uint256"
+                        }
+                    ],
+                    "name": "pixels",
+                    "outputs": [
+                        {
+                            "internalType": "address",
+                            "name": "owner",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "color",
+                            "type": "uint256"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                },
+                {
+                    "inputs": [],
+                    "name": "withdraw",
+                    "outputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "function"
+                }
+            ];
+        let provider;
+        let signer;
+        let contract;
+        let accounts;
+        const pixelPrice = ethers.utils.parseEther('0.01');  // Set pixel price to 0.01 Ether
+
+        // Load grid and pixels
+        window.onload = async () => {
+            createGrid();
+            await connectWallet();
+            await loadAllPixels();
+            listenForEvents();
+        };
+
+        // Create 100x100 pixel grid
+        function createGrid() {
+            const grid = document.getElementById("pixelGrid");
+            for (let y = 0; y < 100; y++) {
+                for (let x = 0; x < 100; x++) {
+                    const pixel = document.createElement("div");
+                    pixel.className = "pixel";
+                    pixel.dataset.x = x;
+                    pixel.dataset.y = y;
+                    pixel.onclick = () => selectPixel(x, y);
+                    grid.appendChild(pixel);
+                }
+            }
+        }
+
+        // Connect to MetaMask wallet using Ethers.js
+        async function connectWallet() {
+            if (window.ethereum) {
+                try {
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    await provider.send("eth_requestAccounts", []); // Ask for user wallet connection
+                    signer = provider.getSigner();
+                    accounts = await signer.getAddress();
+                    contract = new ethers.Contract(contractAddress, contractABI, signer);
+
+                    document.getElementById("status").innerText = "Wallet connected: " + accounts;
+                } catch (error) {
+                    console.error("User denied account access:", error);
+                }
+            } else {
+                alert("MetaMask not detected. Please install MetaMask!");
+            }
+        }
+
+        // Load all existing pixels on the grid
+        async function loadAllPixels() {
+            for (let y = 0; y < 100; y++) {
+                for (let x = 0; x < 100; x++) {
+                    await loadPixel(x, y);
+                }
+            }
+        }
+
+        // Load a single pixel's color
+        async function loadPixel(x, y) {
+            return;
+            try {
+                const pixelData = await contract.getPixel(x, y);
+                const colorInt = pixelData.color.toNumber();
+                const hexColor = colorInt.toString(16).padStart(6, '0'); // Convert integer color to hex
+                const pixelElement = document.querySelector(`.pixel[data-x='${x}'][data-y='${y}']`);
+                if (colorInt !== 0) {  // Only set color if it's not the default (0)
+                    pixelElement.style.backgroundColor = "#" + hexColor;
+                }
+            } catch (error) {
+                console.error(`Failed to load pixel data for (${x}, ${y}):`, error);
+            }
+        }
+
+        // Listen for PixelBought events
+        function listenForEvents() {
+            contract.on("PixelBought", (owner, x, y, color) => {
+                const hexColor = color.toNumber().toString(16).padStart(6, '0');
+                document.querySelector(`.pixel[data-x='${x}'][data-y='${y}']`).style.backgroundColor = "#" + hexColor;
+            });
+        }
+
+        // Select a pixel to change its color
+        async function selectPixel(x, y) {
+            const colorPicker = document.getElementById("colorPicker");
+            const hexColor = colorPicker.value.replace("#", "");
+            const colorInt = parseInt(hexColor, 16); // Convert hex color to integer
+
+            if (!accounts) {
+                alert("Please connect your wallet first.");
+                return;
+            }
+
+            try {
+                // Call buyPixel function
+                console.log(x,y);
+                const tx = await contract.buyPixel(x, y, colorInt, {
+                    value: pixelPrice
+                });
+
+                // Wait for the transaction to be mined
+                await tx.wait();
+                console.log("Transaction successful:", tx.hash);
+
+                // Update pixel color on the front-end
+                document.querySelector(`.pixel[data-x='${x}'][data-y='${y}']`).style.backgroundColor = "#" + hexColor;
+
+            } catch (error) {
+                console.error("Transaction failed:", error);
+            }
+        }
+    </script>
+
+</body>
+
+</html>

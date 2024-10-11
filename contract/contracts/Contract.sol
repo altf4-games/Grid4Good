@@ -9,7 +9,7 @@ contract Grid {
         uint256 color;
     }
 
-    uint256 public constant GRID_SIZE = 1000;
+    uint256 public constant GRID_SIZE = 100;
     uint256 public constant PIXEL_PRICE = 0.01 ether;
 
     mapping(uint256 => mapping(uint256 => Pixel)) public pixels;
@@ -22,12 +22,7 @@ contract Grid {
 
         Pixel storage pixel = pixels[x][y];
 
-        if (pixel.owner == address(0)) {
-            pixel.owner = msg.sender;
-        } else {
-            require(pixel.owner == msg.sender, "You do not own this pixel");
-        }
-
+        pixel.owner = msg.sender;
         pixel.color = color;
 
         emit PixelUpdated(x, y, msg.sender, color);
