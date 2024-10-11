@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Onchain Pixel Art - R/Place Clone</title>
+    <title>Onchain Pixel Art</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <style>
         body {
@@ -51,9 +51,9 @@
     </div>
 
     <script>
-        // Contract Address and ABI
-        const contractAddress = "0x16C4CCA5a1fFaE42929B3C871041a1B741aE32Bd";
-    const contractABI = [
+    const contractAddress = "0x16C4CCA5a1fFaE42929B3C871041a1B741aE32Bd";
+    const contractABI = 
+    [
         {
             "inputs": [],
             "stateMutability": "nonpayable",
@@ -130,119 +130,123 @@
         }
     ];
 
-        let provider;
-        let signer;
-        let contract;
-        let accounts;
-        const pixelPrice = ethers.utils.parseEther('0.01');  // Set pixel price to 0.01 Ether
+    let provider;
+    let signer;
+    let contract;
+    let accounts;
+    const pixelPrice = ethers.utils.parseEther('0.01');  
 
-        // Load grid and pixels
-        window.onload = async () => {
-            createGrid();
-            await connectWallet();
-            await loadAllPixels();
-            listenForEvents();
-        };
+    window.onload = async () => {
+        createGrid();
+        await connectWallet();
+        await loadAllPixels();
+        listenForEvents();
+    };
 
-        // Create 100x100 pixel grid
-        function createGrid() {
-            const grid = document.getElementById("pixelGrid");
-            for (let y = 0; y < 100; y++) {
-                for (let x = 0; x < 100; x++) {
-                    const pixel = document.createElement("div");
-                    pixel.className = "pixel";
-                    pixel.dataset.x = x;
-                    pixel.dataset.y = y;
-                    pixel.onclick = () => selectPixel(x, y);
-                    grid.appendChild(pixel);
-                }
+    function createGrid() {
+        const grid = document.getElementById("pixelGrid");
+        for (let y = 0; y < 100; y++) {
+            for (let x = 0; x < 100; x++) {
+                const pixel = document.createElement("div");
+                pixel.className = "pixel";
+                pixel.dataset.x = x;
+                pixel.dataset.y = y;
+                pixel.onclick = () => selectPixel(x, y);
+                grid.appendChild(pixel);
             }
         }
+    }
 
-        // Connect to MetaMask wallet using Ethers.js
-        async function connectWallet() {
-            if (window.ethereum) {
-                try {
-                    provider = new ethers.providers.Web3Provider(window.ethereum);
-                    await provider.send("eth_requestAccounts", []); // Ask for user wallet connection
-                    signer = provider.getSigner();
-                    accounts = await signer.getAddress();
-                    contract = new ethers.Contract(contractAddress, contractABI, signer);
-
-                    document.getElementById("status").innerText = "Wallet connected: " + accounts;
-                } catch (error) {
-                    console.error("User denied account access:", error);
-                }
-            } else {
-                alert("MetaMask not detected. Please install MetaMask!");
-            }
-        }
-
-        // Load all existing pixels on the grid
-        async function loadAllPixels() {
-            for (let y = 0; y < 100; y++) {
-                for (let x = 0; x < 100; x++) {
-                    await loadPixel(x, y);
-                }
-            }
-        }
-
-        // Load a single pixel's color
-        async function loadPixel(x, y) {
-            return;
+    async function connectWallet() {
+        if (window.ethereum) {
             try {
-                const pixelData = await contract.getPixel(x, y);
-                const colorInt = pixelData.color.toNumber();
-                const hexColor = colorInt.toString(16).padStart(6, '0'); // Convert integer color to hex
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                signer = provider.getSigner();
+                accounts = await signer.getAddress();
+                contract = new ethers.Contract(contractAddress, contractABI, signer);
+
+                document.getElementById("status").innerText = "Wallet connected: " + accounts;
+            } catch (error) {
+                console.error("User denied account access:", error);
+            }
+        } else {
+            alert("MetaMask not detected. Please install MetaMask!");
+        }
+    }
+
+    async function loadAllPixels() {
+        for (let y = 0; y < 100; y++) {
+            for (let x = 0; x < 100; x++) {
+                await loadPixel(x, y);
+            }
+        }
+    }
+
+
+    async function loadPixel(x, y) 
+    {
+        try {
+            const pixelData = await contract.getPixel(x, y);  
+            if (!pixelData) {
+                console.error(`No data returned for (${x}, ${y})`);
+                return;
+            }
+
+            const owner = pixelData[0]; 
+            const colorBigNumber = pixelData[1];  
+
+            if (colorBigNumber) {
+                const colorInt = colorBigNumber.toNumber(); 
+                const hexColor = colorInt.toString(16).padStart(6, '0');  
+
                 const pixelElement = document.querySelector(`.pixel[data-x='${x}'][data-y='${y}']`);
-                if (colorInt !== 0) {  // Only set color if it's not the default (0)
+                if (colorInt !== 0) {  
                     pixelElement.style.backgroundColor = "#" + hexColor;
                 }
-            } catch (error) {
-                console.error(`Failed to load pixel data for (${x}, ${y}):`, error);
+            } else {
+                console.error(`No color value for pixel at (${x}, ${y})`);
             }
-        }
 
-        // Listen for PixelBought events
+        } catch (error) {
+            console.error(`Failed to load pixel data for (${x}, ${y}):`, error);
+        }
+    }
 
     function listenForEvents() {
         contract.on("PixelUpdated", (x, y, owner, color) => {
-            const hexColor = color.toString(16).padStart(6, '0');  // Error happens here
+            const hexColor = color.toString(16).padStart(6, '0');  
             document.querySelector(`.pixel[data-x='${x}'][data-y='${y}']`).style.backgroundColor = "#" + hexColor;
             console.log(`Pixel updated at (${x}, ${y}) by ${owner} to color #${hexColor}`);
         });
     }
 
 
-        // Select a pixel to change its color
-        async function selectPixel(x, y) {
-            const colorPicker = document.getElementById("colorPicker");
-            const hexColor = colorPicker.value.replace("#", "");
-            const colorInt = parseInt(hexColor, 16); // Convert hex color to integer
+    async function selectPixel(x, y) {
+        const colorPicker = document.getElementById("colorPicker");
+        const hexColor = colorPicker.value.replace("#", "");
+        const colorInt = parseInt(hexColor, 16); 
 
-            if (!accounts) {
-                alert("Please connect your wallet first.");
-                return;
-            }
-
-            try {
-                // Call buyPixel function
-                console.log(x,y);
-                const tx = await contract.buyPixel(x, y, colorInt, {
-                    value: pixelPrice
-                });
-
-                // Wait for the transaction to be mined
-                await tx.wait();
-                console.log("Transaction successful:", tx.hash);
-
-                // Update pixel color on the front-end
-                document.querySelector(`.pixel[data-x='${x}'][data-y='${y}']`).style.backgroundColor = "#" + hexColor;
-
-            } catch (error) {
-                console.error("Transaction failed:", error);
-            }
+        if (!accounts) {
+            alert("Please connect your wallet first.");
+            return;
         }
+
+        try {
+            //console.log(x,y);
+            const tx = await contract.buyPixel(x, y, colorInt, {
+                value: pixelPrice
+            });
+
+            await tx.wait();
+            console.log("Transaction successful:", tx.hash);
+
+            document.querySelector(`.pixel[data-x='${x}'][data-y='${y}']`).style.backgroundColor = "#" + hexColor;
+
+        } catch (error) {
+            console.error("Transaction failed:", error);
+        }
+    }
     </script>
 
 </body>
