@@ -191,10 +191,10 @@
     </div>
 
     <div class="container">
-        <div id="progressBarContainer">
+        <!-- <div id="progressBarContainer">
             <div id="progressBar"></div>
         </div>
-        <div id="loadingText">Loading pixels...</div>
+        <div id="loadingText">Loading pixels...</div> -->
 
         <div class="grid-container">
             <div class="grid" id="pixelGrid"></div>
@@ -335,17 +335,17 @@
                 for (let x = 0; x < 100; x++) {
                     await loadPixel(x, y);
                     pixelsLoaded++;
-                    document.getElementById("loadingText").innerText = pixelsLoaded + " / " + totalPixels + " pixels loaded";
-                    updateProgressBar(pixelsLoaded / totalPixels * 100);
+                    //document.getElementById("loadingText").innerText = pixelsLoaded + " / " + totalPixels + " pixels loaded";
+                    //updateProgressBar(pixelsLoaded / totalPixels * 100);
                 }
             }
-            document.getElementById("loadingText").innerText = "All pixels loaded!";
+            //document.getElementById("loadingText").innerText = "All pixels loaded!";
         }
 
-        function updateProgressBar(percentage) {
-            const progressBar = document.getElementById("progressBar");
-            progressBar.style.width = percentage + "%";
-        }
+        // function updateProgressBar(percentage) {
+        //     const progressBar = document.getElementById("progressBar");
+        //     progressBar.style.width = percentage + "%";
+        // }
 
         async function loadPixel(x, y) {
             try {
