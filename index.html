@@ -7,246 +7,396 @@
     <title>Onchain Pixel Art</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <style>
+        /* Basic Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Inter', sans-serif;
+            background-color: #1e1e1e;
+            color: #fff;
             display: flex;
             flex-direction: column;
             align-items: center;
             padding: 20px;
+            min-height: 100vh;
+        }
+
+        /* Navbar */
+        .navbar {
+            width: 100%;
+            background-color: #2a2a2a;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            z-index: 10;
+        }
+
+        .navbar h1 {
+            font-size: 1.8rem;
+            color: #00bfa5;
+        }
+
+        .navbar .wallet-info {
+            font-size: 0.9rem;
+            color: #fff;
+        }
+
+        .navbar button {
+            padding: 8px 16px;
+            background-color: #008cba;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.3s ease;
+            margin-left: 20px;
+        }
+
+        .navbar button:hover {
+            background-color: #005f7f;
+        }
+
+        /* Centered container */
+        .container {
+            margin-top: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Grid Styling */
+        .grid-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
         }
 
         .grid {
             display: grid;
-            grid-template-columns: repeat(100, 10px);
-            grid-template-rows: repeat(100, 10px);
+            grid-template-columns: repeat(100, 8px);
+            grid-template-rows: repeat(100, 8px);
             gap: 1px;
+            margin-top: 20px;
         }
 
         .pixel {
-            width: 10px;
-            height: 10px;
-            background-color: #ffffff;
-            border: 1px solid #ddd;
+            width: 8px;
+            height: 8px;
+            background-color: #444;
+            border: 1px solid #555;
             cursor: pointer;
+            transition: background-color 0.3s ease;
         }
 
+        .pixel:hover {
+            border: 1px solid #00bfa5;
+        }
+
+        /* Controls */
         .controls {
             margin-top: 20px;
             text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .controls input[type="color"] {
+            -webkit-appearance: none;
+            appearance: none;
+            border: none;
+            border-radius: 12px;
+            width: 60px;
+            height: 60px;
+            cursor: pointer;
+            background: none;
+            padding: 0;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            transition: box-shadow 0.3s ease;
+        }
+
+        .controls input[type="color"]::-webkit-color-swatch {
+            border: none;
+            border-radius: 12px;
+        }
+
+        .controls input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+            border-radius: 12px;
+        }
+
+        .controls input[type="color"]:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        .controls input[type="color"]:focus {
+            outline: none;
+            box-shadow: 0 4px 12px rgba(0, 191, 165, 0.6);
+        }
+
+        /* Progress bar */
+        #progressBarContainer {
+            width: 100%;
+            max-width: 500px;
+            height: 20px;
+            background-color: #333;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #progressBar {
+            height: 100%;
+            width: 0;
+            background-color: #00bfa5;
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+
+        #loadingText {
+            margin-top: 5px;
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: repeat(50, 12px);
+                grid-template-rows: repeat(50, 12px);
+            }
         }
     </style>
 </head>
 
 <body>
 
-    <h1>Onchain Pixel Art</h1>
-    <p>Click a pixel to change its color. Each pixel costs 0.01 Ether.</p>
+    <div class="navbar">
+        <h1>Grid4Good</h1>
+        <div class="wallet-info">
+            <span id="walletAddress">Not connected</span>
+            <button onclick="connectWallet()">Connect Wallet</button>
+        </div>
+    </div>
 
-    <div class="grid" id="pixelGrid"></div>
+    <div class="container">
+        <div id="progressBarContainer">
+            <div id="progressBar"></div>
+        </div>
+        <div id="loadingText">Loading pixels...</div>
 
-    <div class="controls">
-        <input type="color" id="colorPicker" value="#ff0000">
-        <button onclick="connectWallet()">Connect Wallet</button>
-        <p id="status">Wallet not connected</p>
+        <div class="grid-container">
+            <div class="grid" id="pixelGrid"></div>
+
+            <div class="controls">
+                <input type="color" id="colorPicker" value="#ff0000">
+            </div>
+        </div>
     </div>
 
     <script>
-    const contractAddress = "0x16C4CCA5a1fFaE42929B3C871041a1B741aE32Bd";
-    const contractABI = 
-    [
-        {
-            "inputs": [],
-            "stateMutability": "nonpayable",
-            "type": "constructor"
-        },
-        {
-            "anonymous": false,
-            "inputs": [
-                { "indexed": false, "internalType": "uint256", "name": "x", "type": "uint256" },
-                { "indexed": false, "internalType": "uint256", "name": "y", "type": "uint256" },
-                { "indexed": false, "internalType": "address", "name": "owner", "type": "address" },
-                { "indexed": false, "internalType": "uint256", "name": "color", "type": "uint256" }
-            ],
-            "name": "PixelUpdated",
-            "type": "event"
-        },
-        {
-            "inputs": [],
-            "name": "GRID_SIZE",
-            "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "PIXEL_PRICE",
-            "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                { "internalType": "uint256", "name": "x", "type": "uint256" },
-                { "internalType": "uint256", "name": "y", "type": "uint256" },
-                { "internalType": "uint256", "name": "color", "type": "uint256" }
-            ],
-            "name": "buyPixel",
-            "outputs": [],
-            "stateMutability": "payable",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                { "internalType": "uint256", "name": "x", "type": "uint256" },
-                { "internalType": "uint256", "name": "y", "type": "uint256" }
-            ],
-            "name": "getPixel",
-            "outputs": [
-                { "internalType": "address", "name": "", "type": "address" },
-                { "internalType": "uint256", "name": "", "type": "uint256" }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                { "internalType": "uint256", "name": "", "type": "uint256" },
-                { "internalType": "uint256", "name": "", "type": "uint256" }
-            ],
-            "name": "pixels",
-            "outputs": [
-                { "internalType": "address", "name": "owner", "type": "address" },
-                { "internalType": "uint256", "name": "color", "type": "uint256" }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "withdraw",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        }
-    ];
+        const contractAddress = "0x16C4CCA5a1fFaE42929B3C871041a1B741aE32Bd";
+        const contractABI = [
+            {
+                "inputs": [],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    { "indexed": false, "internalType": "uint256", "name": "x", "type": "uint256" },
+                    { "indexed": false, "internalType": "uint256", "name": "y", "type": "uint256" },
+                    { "indexed": false, "internalType": "address", "name": "owner", "type": "address" },
+                    { "indexed": false, "internalType": "uint256", "name": "color", "type": "uint256" }
+                ],
+                "name": "PixelUpdated",
+                "type": "event"
+            },
+            {
+                "inputs": [],
+                "name": "GRID_SIZE",
+                "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "PIXEL_PRICE",
+                "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    { "internalType": "uint256", "name": "x", "type": "uint256" },
+                    { "internalType": "uint256", "name": "y", "type": "uint256" },
+                    { "internalType": "uint256", "name": "color", "type": "uint256" }
+                ],
+                "name": "buyPixel",
+                "outputs": [],
+                "stateMutability": "payable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    { "internalType": "uint256", "name": "x", "type": "uint256" },
+                    { "internalType": "uint256", "name": "y", "type": "uint256" }
+                ],
+                "name": "getPixel",
+                "outputs": [
+                    { "internalType": "address", "name": "", "type": "address" },
+                    { "internalType": "uint256", "name": "", "type": "uint256" }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    { "internalType": "uint256", "name": "", "type": "uint256" },
+                    { "internalType": "uint256", "name": "", "type": "uint256" }
+                ],
+                "name": "pixels",
+                "outputs": [
+                    { "internalType": "address", "name": "owner", "type": "address" },
+                    { "internalType": "uint256", "name": "color", "type": "uint256" }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "withdraw",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            }
+        ];
 
-    let provider;
-    let signer;
-    let contract;
-    let accounts;
-    const pixelPrice = ethers.utils.parseEther('0.01');  
+        let provider;
+        let signer;
+        let contract;
+        let accounts;
+        const pixelPrice = ethers.utils.parseEther('0.01');
 
-    window.onload = async () => {
-        createGrid();
-        await connectWallet();
-        await loadAllPixels();
-        listenForEvents();
-    };
+        window.onload = async () => {
+            createGrid();
+            await connectWallet();
+            await loadAllPixels();
+            listenForEvents();
+        };
 
-    function createGrid() {
-        const grid = document.getElementById("pixelGrid");
-        for (let y = 0; y < 100; y++) {
-            for (let x = 0; x < 100; x++) {
-                const pixel = document.createElement("div");
-                pixel.className = "pixel";
-                pixel.dataset.x = x;
-                pixel.dataset.y = y;
-                pixel.onclick = () => selectPixel(x, y);
-                grid.appendChild(pixel);
+        function createGrid() {
+            const grid = document.getElementById("pixelGrid");
+            for (let y = 0; y < 100; y++) {
+                for (let x = 0; x < 100; x++) {
+                    const pixel = document.createElement("div");
+                    pixel.className = "pixel";
+                    pixel.dataset.x = x;
+                    pixel.dataset.y = y;
+                    pixel.onclick = () => selectPixel(x, y);
+                    grid.appendChild(pixel);
+                }
             }
         }
-    }
 
-    async function connectWallet() {
-        if (window.ethereum) {
+        async function connectWallet() {
+            if (window.ethereum) {
+                try {
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    await provider.send("eth_requestAccounts", []);
+                    signer = provider.getSigner();
+                    accounts = await signer.getAddress();
+                    contract = new ethers.Contract(contractAddress, contractABI, signer);
+                    document.getElementById("walletAddress").innerText = "Wallet: " + accounts.slice(0, 6) + "..." + accounts.slice(-4);
+                } catch (error) {
+                    console.error("User denied account access:", error);
+                }
+            } else {
+                alert("MetaMask not detected. Please install MetaMask!");
+            }
+        }
+
+        async function loadAllPixels() {
+            const totalPixels = 10000;
+            let pixelsLoaded = 0;
+            for (let y = 0; y < 100; y++) {
+                for (let x = 0; x < 100; x++) {
+                    await loadPixel(x, y);
+                    pixelsLoaded++;
+                    document.getElementById("loadingText").innerText = pixelsLoaded + " / " + totalPixels + " pixels loaded";
+                    updateProgressBar(pixelsLoaded / totalPixels * 100);
+                }
+            }
+            document.getElementById("loadingText").innerText = "All pixels loaded!";
+        }
+
+        function updateProgressBar(percentage) {
+            const progressBar = document.getElementById("progressBar");
+            progressBar.style.width = percentage + "%";
+        }
+
+        async function loadPixel(x, y) {
             try {
-                provider = new ethers.providers.Web3Provider(window.ethereum);
-                await provider.send("eth_requestAccounts", []);
-                signer = provider.getSigner();
-                accounts = await signer.getAddress();
-                contract = new ethers.Contract(contractAddress, contractABI, signer);
+                const pixelData = await contract.getPixel(x, y);
+                const owner = pixelData[0];
+                const colorBigNumber = pixelData[1];
 
-                document.getElementById("status").innerText = "Wallet connected: " + accounts;
+                if (owner !== "0x0000000000000000000000000000000000000000") {
+                    const colorInt = colorBigNumber.toNumber();
+                    const hexColor = colorInt.toString(16).padStart(6, '0');
+                    const pixelElement = document.querySelector(`.pixel[data-x='${x}'][data-y='${y}']`);
+                    if (colorInt !== 0) {
+                        pixelElement.style.backgroundColor = "#" + hexColor;
+                    }
+                }
+
             } catch (error) {
-                console.error("User denied account access:", error);
-            }
-        } else {
-            alert("MetaMask not detected. Please install MetaMask!");
-        }
-    }
-
-    async function loadAllPixels() {
-        for (let y = 0; y < 100; y++) {
-            for (let x = 0; x < 100; x++) {
-                await loadPixel(x, y);
+                console.error(`Failed to load pixel data for (${x}, ${y}):`, error);
             }
         }
-    }
 
+        function listenForEvents() {
+            contract.on("PixelUpdated", (x, y, owner, color) => {
+                const hexColor = color.toString(16).padStart(6, '0');
+                document.querySelector(`.pixel[data-x='${x}'][data-y='${y}']`).style.backgroundColor = "#" + hexColor;
+                console.log(`Pixel updated at (${x}, ${y}) by ${owner} to color #${hexColor}`);
+            });
+        }
 
-    async function loadPixel(x, y) 
-    {
-        try {
-            const pixelData = await contract.getPixel(x, y);  
-            if (!pixelData) {
-                console.error(`No data returned for (${x}, ${y})`);
+        async function selectPixel(x, y) {
+            const colorPicker = document.getElementById("colorPicker");
+            const hexColor = colorPicker.value.replace("#", "");
+            const colorInt = parseInt(hexColor, 16);
+
+            if (!accounts) {
+                alert("Please connect your wallet first.");
                 return;
             }
 
-            const owner = pixelData[0]; 
-            const colorBigNumber = pixelData[1];  
+            try {
+                const tx = await contract.buyPixel(x, y, colorInt, {
+                    value: pixelPrice
+                });
 
-            if (colorBigNumber) {
-                const colorInt = colorBigNumber.toNumber(); 
-                const hexColor = colorInt.toString(16).padStart(6, '0');  
+                await tx.wait();
+                document.querySelector(`.pixel[data-x='${x}'][data-y='${y}']`).style.backgroundColor = "#" + hexColor;
 
-                const pixelElement = document.querySelector(`.pixel[data-x='${x}'][data-y='${y}']`);
-                if (colorInt !== 0) {  
-                    pixelElement.style.backgroundColor = "#" + hexColor;
-                }
-            } else {
-                console.error(`No color value for pixel at (${x}, ${y})`);
+            } catch (error) {
+                console.error("Transaction failed:", error);
             }
-
-        } catch (error) {
-            console.error(`Failed to load pixel data for (${x}, ${y}):`, error);
         }
-    }
-
-    function listenForEvents() {
-        contract.on("PixelUpdated", (x, y, owner, color) => {
-            const hexColor = color.toString(16).padStart(6, '0');  
-            document.querySelector(`.pixel[data-x='${x}'][data-y='${y}']`).style.backgroundColor = "#" + hexColor;
-            console.log(`Pixel updated at (${x}, ${y}) by ${owner} to color #${hexColor}`);
-        });
-    }
-
-
-    async function selectPixel(x, y) {
-        const colorPicker = document.getElementById("colorPicker");
-        const hexColor = colorPicker.value.replace("#", "");
-        const colorInt = parseInt(hexColor, 16); 
-
-        if (!accounts) {
-            alert("Please connect your wallet first.");
-            return;
-        }
-
-        try {
-            //console.log(x,y);
-            const tx = await contract.buyPixel(x, y, colorInt, {
-                value: pixelPrice
-            });
-
-            await tx.wait();
-            console.log("Transaction successful:", tx.hash);
-
-            document.querySelector(`.pixel[data-x='${x}'][data-y='${y}']`).style.backgroundColor = "#" + hexColor;
-
-        } catch (error) {
-            console.error("Transaction failed:", error);
-        }
-    }
     </script>
 
 </body>
